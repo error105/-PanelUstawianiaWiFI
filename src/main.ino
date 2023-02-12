@@ -3,6 +3,9 @@
 #include <ESP8266WebServer.h>
 #include <LittleFS.h>
 
+// OTA
+#include <ArduinoOTA.h>
+
 // Dane APka, pod jakim bedzie sie rozglaszal nasz ESP.
 String ssidbac = "AP-01";
 String passbac = "12345678";
@@ -27,7 +30,16 @@ void setup() {
   WiFi.mode(WIFI_STA);
   WiFi.begin(ssid, password);
   int counter = 0;
-  
+  ArduinoOTA.setHostname("ESP_OTA");
+    ArduinoOTA
+      .onStart([]() {
+        String type;
+        if (ArduinoOTA.getCommand() == U_FLASH)
+          type = "sketch";
+        else // U_SPIFFS
+          type = "filesystem";
+      });
+
   while (WiFi.status() != WL_CONNECTED && counter < 40) {
     // Ustawiamy ile czasu mamy poswiecic na polaczenie z WiFi (250ms * 40)
     delay(250);
@@ -45,13 +57,18 @@ void setup() {
       Serial.println("Polaczono z WiFi");
       Serial.println("Adres IP: ");
       Serial.println(WiFi.localIP());
+      // Uruchamiamy OTA
+      ArduinoOTA.begin();
     }
 }
 
 void loop() {
   // Utrzymywanie serwera WWW przy zyciu jesli nie udalosie polaczyc z Siecia WiFi
   if (WiFi.status() != WL_CONNECTED) {
-    server.handleClient();}
+    server.handleClient();
+  } else {
+    ArduinoOTA.handle();
+  }
   // Dalej wstawiamy juz nasz kod
 
 }
